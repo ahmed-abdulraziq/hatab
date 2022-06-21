@@ -1,0 +1,348 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  text-transform: capitalize;
+}
+h1 {
+  letter-spacing: 2px;
+  padding: 10px 20px;
+  /* background-image: linear-gradient(90deg, crimson, #fcb3b3,#B3E5FC, #04afff); */
+  background-color: #04afff;
+  color: #fff;
+  border-bottom: solid 2px #000;
+}
+
+/* < clients & cashs ------------------------------> */
+.clients,
+.cashs {
+  width: 400px;
+  max-width: 100%;
+  margin: 30px auto;
+  padding: 10px;
+}
+.clients {
+  display: none;
+}
+
+/* < to client & to cash ------------------------------> */
+.toClient,
+.toCash {
+  position: fixed;
+  bottom: 20px;
+  border: solid 2px;
+  padding: 10px;
+  cursor: pointer;
+  font-weight: bold;
+  background-color: #fcb3b3;
+  transition: all .5s;
+  z-index: 1;
+}
+.toCash {
+  background-color: #B3E5FC;
+}
+.toClient:hover {
+  background-color: crimson;
+}
+.toCash:hover {
+  background-color: #04afff;
+}
+
+/* < totale cash ------------------------------> */
+.totale {
+  display: flex;
+  background-color: #B3E5FC;
+  margin-bottom: 30px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-align: center;
+  font-size: 22px;
+  border: 2px solid;
+}
+.totale span {
+  padding: 10px;
+  flex: 1;
+}
+.totale span:first-child {
+  background-color: #fcb3b3;
+  border-right: 2px solid;
+}
+
+/* < show (cash & client) ------------------------------> */
+.show {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.show form {
+  position: relative;
+  flex: 1;
+}
+.show input {
+  width: 100%;
+  padding: 8px;
+  padding-right: 30px;
+  font-size: 16px;
+  border: 2px solid;
+  outline: none;
+}
+.show form i {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+}
+/* < show (add cash & add client & filter) ------------------------------> */
+.showAddClient,
+.showAddCash,
+.showFilter {
+  border: 2px solid #000;
+  background-color: #B3E5FC;
+  transition: all .5s;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px;
+}
+.showAddClient:hover,
+.showAddCash:hover,
+.showFilter:hover {
+  color: #fff;
+  background-color: #04afff;
+}
+
+/* < add (cash & client) ------------------------------> */
+.addClient,
+.addCash,
+.showClient {
+  display: none;
+  text-align: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 100%;
+  background-color: #00000077;
+  z-index: 2;
+}
+.addClient > div,
+.addCash > div,
+.showClient > div {
+  padding: 20px;
+  width: 400px;
+  height: 100%;
+  max-width: 100%;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background-color: #fff;
+}
+.addClient h2,
+.addCash h2 {
+  color: crimson;
+  margin-bottom: 20px;
+  font-size: 40px;
+}
+.addClient span,
+.addCash span {
+  margin: 10px 0;
+  font-size: 18px;
+  text-align: left;
+}
+.addClient input,
+.addCash input,
+.addCash select,
+.filter input,
+.filter select {
+  padding: 10px;
+  border: 2px solid;
+  outline: none;
+}
+.addClient div div, 
+.addCash div div {
+  margin-top: 40px;
+  display: flex;
+  gap: 20px;
+}
+#addCashNem {
+  flex: 1;
+}
+.addCash .divCach {
+  margin-top: 0;
+}
+.addClient button, 
+.addCash button {
+  flex: 1;
+  padding: 10px;
+  border: 2px solid;
+  background-color: #B3E5FC;
+  font-size: 18px;
+  transition: all .5s;
+}
+.addClient button:hover,
+.addCash button:hover {
+  background-color: #04afff;
+  color: #fff;
+  border-color: black;
+}
+.addClient button:last-child,
+.addCash button:last-child {
+  background-color: #fcb3b3;
+}
+.addClient button:last-child:hover,
+.addCash button:last-child:hover {
+  background-color: crimson;
+}
+
+/* < filter ------------------------------> */
+.filterShow {
+  display: none;
+}
+.filter h3 {
+ padding: 20px 0 10px;
+}
+.filter div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: bold;
+}
+.filter input,
+.filter select {
+  flex: 1;
+  font-weight: bold;
+}
+.filter select {
+  margin-bottom: 20px;
+}
+
+/* < client & cash ------------------------------> */
+.client,
+.cash {
+  position: relative;
+  display: flex;
+  border: 2px solid;
+  margin: 20px 0;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+.card .client,
+.remove {
+  cursor: pointer;
+}
+.client i,
+.cash i {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #04afff;
+  width: 40px;
+  height: 100%;
+  border-right: 2px solid #000;
+  transition: all .5s;
+}
+.cash .type {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+  border-left: 2px solid;
+  width: 100px;
+}
+.client .name,
+.cash .name {
+  overflow: hidden;
+  flex: 1;
+  padding: 5px 10px;
+}
+.cash .name h3 {
+  overflow:hidden;
+  width: 100%;
+}
+.cash .name p {
+  font-weight: normal;
+  font-size: 10px;
+  text-align: right;
+}
+
+/* < remove ------------------------------> */
+.remove i,
+.remove i {
+  position: absolute;
+  right: -15px;
+  top: 10px;
+  width: 30px;
+  height: 30px;
+  background-color: #fcb3b3;
+  border: 2px solid #000;
+  transition: all .5s;
+}
+.remove i:hover,
+.remove i:hover {
+  color: #fff;
+  background-color: crimson;
+}
+
+/* < show Client ------------------------------> */
+.showClient > div {
+  text-align: left;
+  position: relative;
+}
+.position {
+  position: absolute;
+  top: 20px;
+  right: 0;
+}
+.position i {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.showClient h3 {
+  font-size: 40px;
+  text-align: center;
+  color: crimson;
+}
+.showClient .info {
+  display: flex;
+}
+.showClient .info p {
+  flex: 1;
+  padding: 10px 0;
+}
+.showClient .info i {
+  padding-right: 10px;
+}
+.showClient .client div {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+.showClient .cashClient {
+  flex: 1;
+  padding: 10px;
+}
+.showClient .type {
+  width: 110px;
+  display: inline-block;
+  padding: 10px;
+  border-left: solid 2px;
+}
+.showClient button {
+  margin-top: 10px;
+  padding: 10px;
+  border: 2px solid #000;
+  background-color: #fcb3b3;
+  font-size: 18px;
+  letter-spacing: 1px;
+  transition: all .5s;
+}
+.showClient button:hover {
+  background-color: crimson;
+  color: #fff;
+}
