@@ -11,6 +11,10 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(version),
   },
+  build: {
+    // Older phones too: Chrome 87+, Safari 14+ (iOS 14), Firefox 78+.
+    target: ['es2020', 'edge88', 'firefox78', 'chrome87', 'safari14'],
+  },
   plugins: [
     react(),
     VitePWA({

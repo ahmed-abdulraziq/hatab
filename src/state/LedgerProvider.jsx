@@ -17,6 +17,19 @@ const importLegacyDataOnce = () => {
 export default function LedgerProvider({ children }) {
   const toast = useToast();
   const [booted, setBooted] = useState(false);
+  const [storageError, setStorageError] = useState(null);
+
+  // When the browser refuses on-device storage, the live queries below just wait forever.
+  // Opening the database up front turns that into an error ErrorBoundary can explain.
+  useEffect(() => {
+    let active = true;
+    db.open().catch((error) => {
+      if (active) setStorageError(error);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -58,5 +71,6 @@ export default function LedgerProvider({ children }) {
     };
   }, [booted, clients, transactions, settingsRows]);
 
+  if (storageError) throw storageError;
   return <LedgerContext.Provider value={value}>{children}</LedgerContext.Provider>;
 }

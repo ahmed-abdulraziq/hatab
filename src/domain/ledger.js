@@ -131,7 +131,7 @@ export function totals(transactions) {
 export function groupByDate(sortedTransactions) {
   const groups = [];
   for (const tx of sortedTransactions) {
-    const last = groups.at(-1);
+    const last = groups[groups.length - 1];
     if (last && last.date === tx.date) last.items.push(tx);
     else groups.push({ date: tx.date, items: [tx] });
   }
