@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import ConfirmProvider from './components/ConfirmProvider.jsx';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 import ToastProvider from './components/ToastProvider.jsx';
 import { TabBar } from './components/ui.jsx';
 import { useRoute } from './router.js';
@@ -12,13 +13,15 @@ import LedgerProvider from './state/LedgerProvider.jsx';
 
 export default function App() {
   return (
-    <ToastProvider>
-      <ConfirmProvider>
-        <LedgerProvider>
-          <Shell />
-        </LedgerProvider>
-      </ConfirmProvider>
-    </ToastProvider>
+    <ErrorBoundary>
+      <ToastProvider>
+        <ConfirmProvider>
+          <LedgerProvider>
+            <Shell />
+          </LedgerProvider>
+        </ConfirmProvider>
+      </ToastProvider>
+    </ErrorBoundary>
   );
 }
 

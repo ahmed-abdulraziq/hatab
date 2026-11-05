@@ -1083,6 +1083,46 @@ textarea {
   }
 }
 
+/* Something broke --------------------------------------------------------- */
+
+.crash {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: center;
+  max-width: 480px;
+  padding: 12vh 20px 24px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.crash-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.crash-text {
+  margin: 0;
+  line-height: 1.7;
+}
+
+.crash-details {
+  align-self: stretch;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.crash-details pre {
+  padding: 12px;
+  font-size: 12px;
+  text-align: left;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--surface);
+  border-radius: 8px;
+}
+
 /* Printing a client's statement ------------------------------------------- */
 
 .print-only,
