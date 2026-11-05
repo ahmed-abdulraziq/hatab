@@ -1,70 +1,64 @@
-# Getting Started with Create React App
+# HATAB · دفتر الحسابات
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+دفتر شُكك وديون ديجيتال للمحلات الصغيرة والحرفيين والفريلانسرز. بتسجّل اللي **إديته** لكل عميل واللي **خدته منه**، والبرنامج بيحسب لوحده مين عليه كام ومين له كام. وتقدر تبعت للعميل رصيده على واتساب بضغطة.
 
-## Available Scripts
+البرنامج بيشتغل على الموبايل زي أي تطبيق (PWA)، ومن غير نت، والبيانات متسجلة على الجهاز نفسه.
 
-In the project directory, you can run:
+## المميزات
 
-### `npm start`
+- **العملاء:** إضافة وتعديل ومسح، ودوّر بالاسم أو الرقم أو العنوان. البحث بيسامح في الإملاء (أحمد = احمد، مكة = مكه)، والقايمة بتترتب بآخر حركة أو بالأكتر عليه أو بالاسم.
+- **رصيد كل عميل:** عليه / له / خالص، ورصيد بعد كل حركة، وملخص فوق باللي ليك عند الناس واللي عليك للناس.
+- **الحركات:**
+  - **تسجيل:** أي حركة ليها تاريخ وملاحظة (مثلًا: 2 كيلو سكر). وأنت بتكتب المبلغ بيبان الرصيد هيبقى كام.
+  - **تعديل ومسح:** تقدر تعدّل أي حركة، والمسح مش بيحصل غير بعد تأكيد.
+  - **مصاريف وبيع نقدي:** الحركات اللي من غير عميل بتتسجل عادي.
+- **فلاتر:** بالتاريخ (من يوم لحد يوم، واليوم الأخير بيتحسب)، وبالنوع، وبالعميل، وفيه اختصارات زي النهارده وآخر 7 أيام والشهر ده. ومعاهم إجمالي الداخل والخارج والصافي.
+- **واتساب:** رسالة تذكير جاهزة برصيد العميل واسم محلك، والأرقام المصرية بتتحوّل للصيغة الدولية لوحدها.
+- **كشف حساب:** للعميل تطبعه أو تحفظه PDF من زرار «كشف حساب».
+- **نسخة احتياطية:** تنزّلها ملف أو تبعتها على واتساب وDrive، وترجّع منها في أي وقت. البرنامج بيفكّرك كل أسبوع.
+- **Excel:** تصدير كل الحركات لملف CSV يفتح في Excel وGoogle Sheets.
+- **أرقام عربي:** المبالغ ممكن تتكتب بالأرقام العربي (١٢٫٥) أو الإنجليزي (12.5).
+- **نقل البيانات القديمة:** أول ما البرنامج يفتح، بينقل بيانات النسخة الأولى (اللي كانت في localStorage) لوحده.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## التشغيل
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+محتاج Node.js 20.19 أو أحدث.
 
-### `npm test`
+```bash
+npm install
+npm run dev       # يشغّل البرنامج على http://localhost:5173
+npm test          # الاختبارات
+npm run lint
+npm run build     # نسخة للنشر في فولدر dist
+npm run preview   # يجرّب نسخة النشر محليًا
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+لو npm 10 طلّع خطأ `Cannot read properties of null (reading 'edgesOut')` وأنت بتضيف مكتبة جديدة، فده bug في npm نفسه. استخدم npm 11 بدله: `npx npm@11 install <المكتبة>`. أما `npm install` و`npm ci` على الـ lockfile الحالي فشغالين عادي.
 
-### `npm run build`
+## النشر
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+ناتج `npm run build` ملفات ثابتة في `dist/`، وتقدر ترفعها على أي استضافة مجانية زي Netlify أو Vercel أو GitHub Pages أو Cloudflare Pages. المسارات نسبية والتنقل جوه البرنامج معمول بالـ hash (`#/client/...`)، فالبرنامج بيشتغل حتى من فولدر فرعي ومن غير أي إعدادات على السيرفر.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+لازم الموقع يكون على HTTPS عشان يتسطب كتطبيق ويشتغل من غير نت، وكل الاستضافات اللي فوق بتوفّر HTTPS.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## إزاي معمول
 
-### `npm run eject`
+- React 19 و Vite و vite-plugin-pwa، والخط Cairo متضمّن في البرنامج نفسه، فبيشتغل من غير نت.
+- البيانات في IndexedDB عن طريق Dexie (`src/db`). كل سجل ليه id عشوائي و `createdAt` و `updatedAt`، فإضافة حسابات ومزامنة بعدين مش هتحتاج تغيير في البيانات.
+- المبالغ متخزنة بالقرش كأرقام صحيحة، فالإجمالي مبيطلعش فيه أرقام زي 0.30000000000000004.
+- منطق الحسابات كله دوال بسيطة في `src/domain` وعليها اختبارات، والشاشات في `src/screens`.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```
+src/
+  domain/      الحسابات والتنسيق والتحقق والنسخ الاحتياطي ونقل البيانات القديمة
+  db/          قاعدة البيانات وكل عمليات الكتابة
+  state/       البيانات الحية اللي الشاشات بتقرا منها
+  components/  النوافذ والفورمات والعناصر المشتركة
+  screens/     العملاء، صفحة العميل، الحركات، الإعدادات
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## الخطوة الجاية
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- حسابات ومزامنة على السحابة (API بـ Laravel أو Supabase)، عشان الداتا تشتغل على أكتر من جهاز ويبقى فيه أكتر من مستخدم.
+- كشف الحساب يتبعت صورة على واتساب على طول.
+- مواعيد سداد مع تذكير.
