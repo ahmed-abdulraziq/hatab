@@ -1,71 +1,113 @@
 import { newId } from '../domain/ids.js';
 import { convertLegacyData, LEGACY_CASH_KEY, LEGACY_CLIENTS_KEY } from '../domain/legacy.js';
-import { db } from './db.js';
+import { localChange } from '../sync/signals.js';
+import { db, isLive } from './db.js';
 
-// The only module that writes to the database. Inputs are already validated by the forms
-// (see domain/validation.js).
+// The only module that writes clients, entries and settings (the sync engine in src/sync
+// applies changes that come from the server). Inputs are already validated by the forms
+// (see domain/validation.js). Every write marks the record `dirty`, so the next sync
+// uploads it.
 
 const timestamp = () => new Date().toISOString();
 
+function changed() {
+  requestPersistentStorage();
+  localChange();
+}
+
 export async function addClient({ name, phone = '', address = '' }) {
   const now = timestamp();
-  const client = { id: newId(), name, phone, address, createdAt: now, updatedAt: now };
+  const client = { id: newId(), name, phone, address, createdAt: now, updatedAt: now, deletedAt: null, dirty: 1 };
   await db.clients.add(client);
-  requestPersistentStorage();
+  changed();
   return client;
 }
 
 export async function updateClient(id, { name, phone = '', address = '' }) {
-  await db.clients.update(id, { name, phone, address, updatedAt: timestamp() });
+  await db.clients.update(id, { name, phone, address, updatedAt: timestamp(), dirty: 1 });
+  changed();
 }
 
 /** Deletes the client together with all of their entries. */
 export async function deleteClient(id) {
+  const gone = { deletedAt: timestamp(), updatedAt: timestamp(), dirty: 1 };
   await db.transaction('rw', db.clients, db.transactions, async () => {
-    await db.transactions.where('clientId').equals(id).delete();
-    await db.clients.delete(id);
+    await db.transactions.where('clientId').equals(id).filter(isLive).modify(gone);
+    await db.clients.update(id, gone);
   });
+  changed();
 }
 
 export async function addTransaction({ clientId = null, type, amount, date, note = '' }) {
   const now = timestamp();
-  const tx = { id: newId(), clientId, type, amount, date, note, createdAt: now, updatedAt: now };
+  const tx = { id: newId(), clientId, type, amount, date, note, createdAt: now, updatedAt: now, deletedAt: null, dirty: 1 };
   await db.transactions.add(tx);
-  requestPersistentStorage();
+  changed();
   return tx;
 }
 
 export async function updateTransaction(id, { clientId = null, type, amount, date, note = '' }) {
-  await db.transactions.update(id, { clientId, type, amount, date, note, updatedAt: timestamp() });
+  await db.transactions.update(id, { clientId, type, amount, date, note, updatedAt: timestamp(), dirty: 1 });
+  changed();
 }
 
 export async function deleteTransaction(id) {
-  await db.transactions.delete(id);
+  const now = timestamp();
+  await db.transactions.update(id, { deletedAt: now, updatedAt: now, dirty: 1 });
+  changed();
 }
 
 export async function setSetting(key, value) {
   await db.settings.put({ key, value });
 }
 
-/** Everything, for a backup file. */
+export async function setSettings(values) {
+  await db.settings.bulkPut(Object.entries(values).map(([key, value]) => ({ key, value })));
+}
+
+const clientFields = ({ id, name, phone, address, createdAt, updatedAt }) => ({ id, name, phone, address, createdAt, updatedAt });
+const transactionFields = ({ id, clientId, type, amount, date, note, createdAt, updatedAt }) => ({
+  id,
+  clientId,
+  type,
+  amount,
+  date,
+  note,
+  createdAt,
+  updatedAt,
+});
+
+/** The book as it is now (no deleted records), for a backup file. */
 export async function exportData() {
   return db.transaction('r', db.clients, db.transactions, db.settings, async () => {
-    const clients = await db.clients.toArray();
-    const transactions = await db.transactions.toArray();
+    const clients = (await db.clients.filter(isLive).toArray()).map(clientFields);
+    const transactions = (await db.transactions.filter(isLive).toArray()).map(transactionFields);
     const rows = await db.settings.toArray();
     return { clients, transactions, settings: Object.fromEntries(rows.map((row) => [row.key, row.value])) };
   });
 }
 
-/** Replaces all clients and entries with the contents of a backup checked by parseBackup. */
+/**
+ * Makes the book exactly what a backup (checked by parseBackup) contains. Restoring counts
+ * as a new edit: records missing from the backup are deleted and the backup's records are
+ * stamped with the current time, so the restore also wins on the owner's other devices.
+ */
 export async function replaceAllData({ clients, transactions, settings }) {
+  const now = timestamp();
   await db.transaction('rw', db.clients, db.transactions, db.settings, async () => {
-    await db.transactions.clear();
-    await db.clients.clear();
-    await db.clients.bulkAdd(clients);
-    await db.transactions.bulkAdd(transactions);
+    for (const [table, records] of [
+      [db.clients, clients],
+      [db.transactions, transactions],
+    ]) {
+      const keep = new Set(records.map((record) => record.id));
+      await table
+        .filter((record) => isLive(record) && !keep.has(record.id))
+        .modify({ deletedAt: now, updatedAt: now, dirty: 1 });
+      await table.bulkPut(records.map((record) => ({ ...record, updatedAt: now, deletedAt: null, dirty: 1 })));
+    }
     await db.settings.put({ key: 'shopName', value: settings?.shopName ?? '' });
   });
+  changed();
 }
 
 /**
@@ -85,8 +127,9 @@ export async function migrateLegacyData(storage = globalThis.localStorage) {
     let imported = null;
     if (isEmpty) {
       imported = convertLegacyData(oldClients, oldCash, { newId });
-      await db.clients.bulkAdd(imported.clients);
-      await db.transactions.bulkAdd(imported.transactions);
+      const fresh = (record) => ({ ...record, deletedAt: null, dirty: 1 });
+      await db.clients.bulkAdd(imported.clients.map(fresh));
+      await db.transactions.bulkAdd(imported.transactions.map(fresh));
     }
     await db.settings.put({ key: 'legacyImported', value: true });
     return imported;

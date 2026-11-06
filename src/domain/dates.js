@@ -71,3 +71,12 @@ export function daysAgoText(days) {
   if (days === 1) return 'امبارح';
   return `من ${countAr(days, DAY_WORDS)}`;
 }
+
+const clockTime = new Intl.DateTimeFormat('ar-EG', { numberingSystem: 'latn', hour: 'numeric', minute: '2-digit' });
+
+/** An ISO timestamp as "النهارده 3:45 م", "امبارح 9:10 ص" or "1 نوفمبر 2026 9:10 ص". */
+export function formatMoment(timestamp, now = new Date()) {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return '';
+  return `${formatDayLabel(toISODate(date), toISODate(now))} ${clockTime.format(date)}`;
+}

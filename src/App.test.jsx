@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import App from './App.jsx';
-import { db } from './db/db.js';
+import { db, isLive } from './db/db.js';
 import { addClient, addTransaction } from './db/repo.js';
 import { addDays, todayISO } from './domain/dates.js';
 import { GAVE, GOT } from './domain/ledger.js';
@@ -69,7 +69,7 @@ describe('HATAB', () => {
     await user.click(await screen.findByRole('button', { name: 'إديته' }));
     await user.click(screen.getByRole('button', { name: 'سجّل' }));
     expect(screen.getByLabelText('المبلغ')).toHaveAccessibleDescription('اكتب مبلغ صحيح أكبر من صفر');
-    expect(await db.transactions.count()).toBe(0);
+    expect(await db.transactions.filter(isLive).count()).toBe(0);
   });
 
   it('edits an entry, and asks before deleting it', async () => {
@@ -94,12 +94,12 @@ describe('HATAB', () => {
     await user.click(screen.getByRole('button', { name: 'مسح الحركة' }));
     const confirm = await screen.findByRole('alertdialog', { name: 'تمسح الحركة دي؟' });
     await user.click(within(confirm).getByRole('button', { name: 'لأ، رجوع' }));
-    expect(await db.transactions.count()).toBe(1);
+    expect(await db.transactions.filter(isLive).count()).toBe(1);
 
     await user.click(screen.getByRole('button', { name: 'مسح الحركة' }));
     await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'امسحها' }));
     await waitFor(() => expect(screen.getByRole('region', { name: 'رصيد العميل' })).toHaveTextContent('خالص'));
-    expect(await db.transactions.count()).toBe(0);
+    expect(await db.transactions.filter(isLive).count()).toBe(0);
   });
 
   it('shows a whole day when "from" and "to" are the same day', async () => {

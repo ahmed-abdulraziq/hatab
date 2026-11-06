@@ -13,7 +13,7 @@ if (typeof HTMLDialogElement !== 'undefined' && !HTMLDialogElement.prototype.sho
     this.dispatchEvent(new Event('close'));
   };
 }
-window.scrollTo = () => {};
+if (typeof window !== 'undefined') window.scrollTo = () => {};
 
 afterEach(() => {
   cleanup();

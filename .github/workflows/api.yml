@@ -1,11 +1,12 @@
-# Installs the API's packages and runs its tests whenever something under api/ changes.
+# Installs the API's packages and runs its tests whenever the API or the app's sync code
+# changes, then runs the app's sync engine against the real API.
 name: API tests
 
 on:
   push:
-    paths: ['api/**', '.github/workflows/api.yml']
+    paths: ['api/**', 'src/sync/**', 'src/db/**', '.github/workflows/api.yml']
   pull_request:
-    paths: ['api/**', '.github/workflows/api.yml']
+    paths: ['api/**', 'src/sync/**', 'src/db/**', '.github/workflows/api.yml']
   workflow_dispatch:
 
 permissions:
@@ -27,3 +28,37 @@ jobs:
       - run: cp .env.example .env && php artisan key:generate --ansi
 
       - run: php artisan test
+
+  # The app (src/sync) syncing two "devices" through a real running API.
+  app-against-api:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Start the API
+        working-directory: api
+        run: |
+          composer install --no-interaction --no-progress --prefer-dist
+          cp .env.example .env
+          php artisan key:generate --ansi
+          touch database/database.sqlite
+          php artisan migrate --force
+          php artisan serve --host=127.0.0.1 --port=8000 > "$RUNNER_TEMP/api.log" 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8000/up > /dev/null && exit 0; sleep 1; done
+          echo "The API did not start" && exit 1
+
+      - run: npx vitest run src/sync/contract.test.js
+        env:
+          HATAB_API_URL: http://127.0.0.1:8000
+
+      - name: API log
+        if: failure()
+        run: cat "$RUNNER_TEMP/api.log"

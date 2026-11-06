@@ -60,3 +60,4 @@ export function countAr(count, { one, two, few, many }) {
 export const CLIENT_WORDS = { one: 'عميل واحد', two: 'عميلين', few: 'عملاء', many: 'عميل' };
 export const TX_WORDS = { one: 'حركة واحدة', two: 'حركتين', few: 'حركات', many: 'حركة' };
 export const DAY_WORDS = { one: 'يوم واحد', two: 'يومين', few: 'أيام', many: 'يوم' };
+export const CHANGE_WORDS = { one: 'تغيير واحد', two: 'تغييرين', few: 'تغييرات', many: 'تغيير' };
