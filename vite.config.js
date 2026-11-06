@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import { configDefaults } from 'vitest/config';
 
 const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 
@@ -46,5 +47,6 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.js'],
+    exclude: [...configDefaults.exclude, 'api/**'],
   },
 });

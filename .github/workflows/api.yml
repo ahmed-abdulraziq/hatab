@@ -1,0 +1,29 @@
+# Installs the API's packages and runs its tests whenever something under api/ changes.
+name: API tests
+
+on:
+  push:
+    paths: ['api/**', '.github/workflows/api.yml']
+  pull_request:
+    paths: ['api/**', '.github/workflows/api.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v6
+
+      - run: php --version && composer --version
+
+      - run: composer install --no-interaction --no-progress --prefer-dist
+
+      - run: cp .env.example .env && php artisan key:generate --ansi
+
+      - run: php artisan test
