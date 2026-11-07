@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useMemo, useState } from 'react';
 import { useToast } from '../components/toast.js';
-import { db } from '../db/db.js';
+import { db, isLive } from '../db/db.js';
 import { migrateLegacyData } from '../db/repo.js';
 import { balancesByClient, summarize } from '../domain/ledger.js';
 import { CLIENT_WORDS, countAr, TX_WORDS } from '../domain/text.js';
@@ -53,8 +53,9 @@ export default function LedgerProvider({ children }) {
     };
   }, [toast]);
 
-  const clients = useLiveQuery(() => db.clients.toArray(), []);
-  const transactions = useLiveQuery(() => db.transactions.toArray(), []);
+  // Deleted records stay in the database for syncing; the screens never see them.
+  const clients = useLiveQuery(() => db.clients.filter(isLive).toArray(), []);
+  const transactions = useLiveQuery(() => db.transactions.filter(isLive).toArray(), []);
   const settingsRows = useLiveQuery(() => db.settings.toArray(), []);
 
   const value = useMemo(() => {

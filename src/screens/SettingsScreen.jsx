@@ -1,6 +1,7 @@
 import { Download, FileSpreadsheet, Share2, ShieldCheck, Smartphone, TriangleAlert, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { downloadBackup, shareBackup } from '../backupActions.js';
+import AccountCard from '../components/AccountCard.jsx';
 import { useConfirm } from '../components/confirm.js';
 import Field from '../components/Field.jsx';
 import { useToast } from '../components/toast.js';
@@ -12,6 +13,7 @@ import { cleanText, CLIENT_WORDS, countAr, TX_WORDS } from '../domain/text.js';
 import { canShareFiles, downloadFile } from '../files.js';
 import { isIOS, isStandalone, promptInstall, useCanInstall } from '../pwa/install.js';
 import { useLedger } from '../state/LedgerContext.js';
+import { pushProfile } from '../sync/engine.js';
 
 function describeData(clientCount, txCount) {
   if (clientCount === 0 && txCount === 0) return 'مفيش بيانات';
@@ -49,6 +51,8 @@ export default function SettingsScreen() {
     await setSetting('shopName', value);
     setShopName(value);
     toast('اتحفظ الاسم');
+    // Logged in: the account keeps the shop name too, for the owner's other devices.
+    if (settings.authToken) pushProfile({ shopName: value }).catch(() => {});
   };
 
   const run = async (action, success) => {
@@ -97,6 +101,8 @@ export default function SettingsScreen() {
     <>
       <AppBar title="الإعدادات" />
       <main className="screen settings">
+        <AccountCard />
+
         <section className="card">
           <h2 className="card-title">اسم المحل</h2>
           <form className="form" onSubmit={saveShopName}>

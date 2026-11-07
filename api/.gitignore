@@ -1,0 +1,9 @@
+/vendor
+/node_modules
+/.env
+/.env.backup
+/.env.production
+/.phpunit.cache
+/public/storage
+/public/hot
+.phpunit.result.cache

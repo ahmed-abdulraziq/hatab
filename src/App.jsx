@@ -10,6 +10,7 @@ import SettingsScreen from './screens/SettingsScreen.jsx';
 import TransactionsScreen from './screens/TransactionsScreen.jsx';
 import { useLedger } from './state/LedgerContext.js';
 import LedgerProvider from './state/LedgerProvider.jsx';
+import { startAutoSync } from './sync/scheduler.js';
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
       <ToastProvider>
         <ConfirmProvider>
           <LedgerProvider>
+            <AutoSync />
             <Shell />
           </LedgerProvider>
         </ConfirmProvider>
@@ -53,4 +55,10 @@ function Shell() {
       {!onClientPage && <TabBar current={route.name} />}
     </div>
   );
+}
+
+/** Keeps the book in sync with the account while the app is open (when logged in). */
+function AutoSync() {
+  useEffect(() => startAutoSync(), []);
+  return null;
 }

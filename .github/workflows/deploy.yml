@@ -5,6 +5,8 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+    # Changes to the API alone don't change the web app.
+    paths-ignore: ['api/**', '.github/workflows/api.yml']
   workflow_dispatch:
 
 permissions:
@@ -32,6 +34,10 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+        env:
+          # The API address the app uses by default (Settings → Secrets and variables →
+          # Actions → Variables → HATAB_API_URL). Empty until the API is online.
+          VITE_API_URL: ${{ vars.HATAB_API_URL }}
 
       - uses: actions/configure-pages@v5
 
