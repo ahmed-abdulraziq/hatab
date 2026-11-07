@@ -17,6 +17,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // The API only speaks JSON, errors and validation messages included,
         // whatever the client puts in its Accept header.
         $middleware->api(prepend: [ForceJsonResponse::class]);
+
+        // Hosts like Railway put a proxy in front of the app. Without trusting it, every
+        // request would seem to come from the proxy's address, and all users would share
+        // one rate limit.
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

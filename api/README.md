@@ -126,11 +126,61 @@ Authorization: Bearer <token>
 | `DB_*` | قاعدة البيانات |
 | `CORS_ALLOWED_ORIGINS` | المواقع المسموح لها تكلّم الـ API، مفصولة بفاصلة. الافتراضي هو GitHub Pages بتاع البرنامج وlocalhost |
 
-## الرفع على سيرفر
+## الرفع على Railway
 
-أي استضافة فيها PHP 8.3 وقاعدة بيانات بتنفع، زي Laravel Cloud أو Railway أو Render، أو استضافة مشتركة زي Hostinger. على الاستضافة المشتركة لازم الـ document root يشاور على `api/public`، والملف `public/.htaccess` جاهز.
+1. **ادمج PR الـ API في `main`.** Railway هياخد الكود من هناك.
+2. **اعمل مشروع:** على [railway.com](https://railway.com) اختار **New Project ← Deploy from GitHub repo**، واختار الريبو `hatab`. لو Railway لسه ملوش صلاحية على GitHub بتاعك، هيطلب منك تديله.
+3. **فولدر الـ API:** افتح الخدمة الجديدة، وفي **Settings ← Source** خلّي **Root Directory** يبقى `/api`، لأن الـ API مش في أول الريبو.
+4. **قاعدة البيانات:** من صفحة المشروع اختار **Create ← Database ← PostgreSQL**.
+5. **المتغيرات:** في **Variables** بتاعة خدمة الـ API افتح **Raw Editor** والصق ده:
 
-بعد الرفع:
+   ```
+   APP_NAME=HATAB
+   APP_ENV=production
+   APP_DEBUG=false
+   APP_KEY=
+   APP_LOCALE=ar
+   APP_FALLBACK_LOCALE=en
+   DB_CONNECTION=pgsql
+   DB_URL=${{Postgres.DATABASE_URL}}
+   SESSION_DRIVER=array
+   CACHE_STORE=database
+   QUEUE_CONNECTION=sync
+   LOG_CHANNEL=stderr
+   ```
+
+   - **`APP_KEY`:** حط فيه مفتاح عشوائي تعمله على جهازك بأمر من دول، وما تشاركهوش مع حد:
+     - على Mac أو Linux: `echo "base64:$(openssl rand -base64 32)"`
+     - على Windows من PowerShell 7: `"base64:" + [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))`
+     - لو عندك PHP: `php artisan key:generate --show`
+   - **`APP_LOCALE=ar`:** مهم عشان رسايل الأخطاء تطلع بالعربي.
+   - **`DB_URL`:** بيوصّل الـ API بقاعدة Postgres اللي عملتها جوه Railway. لو سمّيت خدمة قاعدة البيانات اسم غير `Postgres`، غيّره في السطر.
+6. **تحديث قاعدة البيانات مع كل نسخة:** في **Settings ← Deploy ← Pre-Deploy Command** اكتب:
+
+   ```
+   sh ./railway/init-app.sh
+   ```
+
+   السكريبت ده بيشغّل `php artisan migrate --force` قبل ما النسخة الجديدة تشتغل، ولو فشل النسخة القديمة بتفضل شغالة.
+7. **فحص الصحة:** في **Settings ← Deploy** خلّي **Healthcheck Path** يبقى `/up`.
+8. **العنوان:** في **Settings ← Networking** دوس **Generate Domain**. هيديك عنوان زي `https://hatab-api-production.up.railway.app`.
+9. **اتأكد إنه شغال:** افتح `<العنوان>/up` لازم يظهر إن السيرفر شغال، و`<العنوان>/` لازم يرجّع `{"name":"HATAB API",...}`.
+10. **اربط البرنامج بيه:** في GitHub افتح **Settings ← Secrets and variables ← Actions ← Variables**، واعمل متغيّر اسمه `HATAB_API_URL` وقيمته العنوان من غير `/` في الآخر. بعدها من **Actions ← Deploy to GitHub Pages ← Run workflow** اعمل نشر جديد للبرنامج، عشان العنوان يبقى مكتوب جاهز في الإعدادات.
+
+بعد كده كل push على `main` بيرفع نسخة جديدة على Railway لوحده.
+
+**لو حاجة ما اشتغلتش:** افتح **Deployments** وبعدين لوج النسخة اللي فشلت.
+
+| اللي هتشوفه في اللوج | السبب والحل |
+| --- | --- |
+| `could not find driver` | الـ PHP اللي على Railway ناقصه إضافة Postgres. ابعت اللوج وأنا أظبطها |
+| `No application encryption key` | `APP_KEY` فاضي أو مكتوب غلط |
+| رسايل الأخطاء بالإنجليزي | `APP_LOCALE=ar` مش مكتوب |
+| البرنامج بيقول «مش قادرين نوصل للسيرفر» | العنوان غلط، أو البرنامج مفتوح من عنوان مش موجود في `CORS_ALLOWED_ORIGINS`. الافتراضي بيسمح بـ `https://ahmed-abdulraziq.github.io` |
+
+### أي سيرفر تاني
+
+أي استضافة فيها PHP 8.3 وقاعدة بيانات بتنفع. على الاستضافة المشتركة لازم الـ document root يشاور على `api/public`، والملف `public/.htaccess` جاهز. بعد الرفع:
 
 ```bash
 composer install --no-dev --optimize-autoloader

@@ -128,4 +128,30 @@ class AccountTest extends TestCase
         $this->postJson('/api/v1/login', ['email' => 'x@example.com', 'password' => 'whatever'])
             ->assertTooManyRequests();
     }
+
+    public function test_behind_a_proxy_each_visitor_has_their_own_limit(): void
+    {
+        $from = fn (string $ip, string $email) => $this->withHeaders(['X-Forwarded-For' => $ip])
+            ->postJson('/api/v1/login', ['email' => $email, 'password' => 'whatever']);
+
+        // Ten failed logins from one visitor don't block a different visitor...
+        for ($i = 0; $i < 10; $i++) {
+            $from('203.0.113.1', "user{$i}@example.com")->assertUnprocessable();
+        }
+        $from('203.0.113.1', 'another@example.com')->assertTooManyRequests();
+        $from('198.51.100.7', 'mona@example.com')->assertUnprocessable();
+    }
+
+    public function test_guessing_one_accounts_password_from_many_addresses_is_limited(): void
+    {
+        for ($i = 0; $i < 10; $i++) {
+            $this->withHeaders(['X-Forwarded-For' => "203.0.113.{$i}"])
+                ->postJson('/api/v1/login', ['email' => 'mona@example.com', 'password' => "guess-{$i}"])
+                ->assertUnprocessable();
+        }
+
+        $this->withHeaders(['X-Forwarded-For' => '198.51.100.7'])
+            ->postJson('/api/v1/login', ['email' => 'mona@example.com', 'password' => 'one-more'])
+            ->assertTooManyRequests();
+    }
 }
