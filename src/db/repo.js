@@ -1,5 +1,6 @@
 import { newId } from '../domain/ids.js';
 import { convertLegacyData, LEGACY_CASH_KEY, LEGACY_CLIENTS_KEY } from '../domain/legacy.js';
+import { balancesByClient } from '../domain/ledger.js';
 import { localChange } from '../sync/signals.js';
 import { db, isLive } from './db.js';
 
@@ -17,7 +18,17 @@ function changed() {
 
 export async function addClient({ name, phone = '', address = '' }) {
   const now = timestamp();
-  const client = { id: newId(), name, phone, address, createdAt: now, updatedAt: now, deletedAt: null, dirty: 1 };
+  const client = {
+    id: newId(),
+    name,
+    phone,
+    address,
+    dueDate: '',
+    createdAt: now,
+    updatedAt: now,
+    deletedAt: null,
+    dirty: 1,
+  };
   await db.clients.add(client);
   changed();
   return client;
@@ -26,6 +37,28 @@ export async function addClient({ name, phone = '', address = '' }) {
 export async function updateClient(id, { name, phone = '', address = '' }) {
   await db.clients.update(id, { name, phone, address, updatedAt: timestamp(), dirty: 1 });
   changed();
+}
+
+/** Sets the day the client promised to pay by ("YYYY-MM-DD"), or clears it with "". */
+export async function setDueDate(id, dueDate) {
+  await db.clients.update(id, { dueDate, updatedAt: timestamp(), dirty: 1 });
+  changed();
+}
+
+/**
+ * A due date is about money owed: once a client's balance is paid off, their due date is
+ * done, so it's cleared. Otherwise the next time they buy on credit, the old date would
+ * show up as already overdue. Runs inside the write that changed their entries.
+ */
+async function clearSettledDueDates(clientIds) {
+  for (const clientId of new Set(clientIds)) {
+    if (!clientId) continue;
+    const client = await db.clients.get(clientId);
+    if (!client?.dueDate || !isLive(client)) continue;
+    const entries = await db.transactions.where('clientId').equals(clientId).filter(isLive).toArray();
+    if (balancesByClient(entries).get(clientId)?.balance > 0) continue;
+    await db.clients.update(clientId, { dueDate: '', updatedAt: timestamp(), dirty: 1 });
+  }
 }
 
 /** Deletes the client together with all of their entries. */
@@ -41,19 +74,30 @@ export async function deleteClient(id) {
 export async function addTransaction({ clientId = null, type, amount, date, note = '' }) {
   const now = timestamp();
   const tx = { id: newId(), clientId, type, amount, date, note, createdAt: now, updatedAt: now, deletedAt: null, dirty: 1 };
-  await db.transactions.add(tx);
+  await db.transaction('rw', db.clients, db.transactions, async () => {
+    await db.transactions.add(tx);
+    await clearSettledDueDates([clientId]);
+  });
   changed();
   return tx;
 }
 
 export async function updateTransaction(id, { clientId = null, type, amount, date, note = '' }) {
-  await db.transactions.update(id, { clientId, type, amount, date, note, updatedAt: timestamp(), dirty: 1 });
+  await db.transaction('rw', db.clients, db.transactions, async () => {
+    const before = await db.transactions.get(id);
+    await db.transactions.update(id, { clientId, type, amount, date, note, updatedAt: timestamp(), dirty: 1 });
+    await clearSettledDueDates([before?.clientId, clientId]);
+  });
   changed();
 }
 
 export async function deleteTransaction(id) {
   const now = timestamp();
-  await db.transactions.update(id, { deletedAt: now, updatedAt: now, dirty: 1 });
+  await db.transaction('rw', db.clients, db.transactions, async () => {
+    const before = await db.transactions.get(id);
+    await db.transactions.update(id, { deletedAt: now, updatedAt: now, dirty: 1 });
+    await clearSettledDueDates([before?.clientId]);
+  });
   changed();
 }
 
@@ -65,7 +109,15 @@ export async function setSettings(values) {
   await db.settings.bulkPut(Object.entries(values).map(([key, value]) => ({ key, value })));
 }
 
-const clientFields = ({ id, name, phone, address, createdAt, updatedAt }) => ({ id, name, phone, address, createdAt, updatedAt });
+const clientFields = ({ id, name, phone, address, dueDate, createdAt, updatedAt }) => ({
+  id,
+  name,
+  phone,
+  address,
+  dueDate: dueDate || '',
+  createdAt,
+  updatedAt,
+});
 const transactionFields = ({ id, clientId, type, amount, date, note, createdAt, updatedAt }) => ({
   id,
   clientId,

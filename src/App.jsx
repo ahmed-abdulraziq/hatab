@@ -3,6 +3,8 @@ import ConfirmProvider from './components/ConfirmProvider.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import ToastProvider from './components/ToastProvider.jsx';
 import { TabBar } from './components/ui.jsx';
+import { todayISO } from './domain/dates.js';
+import { clientsDueNow } from './domain/due.js';
 import { useRoute } from './router.js';
 import ClientScreen from './screens/ClientScreen.jsx';
 import ClientsScreen from './screens/ClientsScreen.jsx';
@@ -19,6 +21,7 @@ export default function App() {
         <ConfirmProvider>
           <LedgerProvider>
             <AutoSync />
+            <DueBadge />
             <Shell />
           </LedgerProvider>
         </ConfirmProvider>
@@ -55,6 +58,23 @@ function Shell() {
       {!onClientPage && <TabBar current={route.name} />}
     </div>
   );
+}
+
+/**
+ * Shows how many clients' due dates came on the installed app's icon, where the system
+ * supports it (desktop Chrome and Edge, iPhone home screen apps with notifications on).
+ */
+function DueBadge() {
+  const { ready, clients, balances } = useLedger();
+  const count = ready ? clientsDueNow(clients, balances, todayISO()).length : 0;
+
+  useEffect(() => {
+    if (!ready || typeof navigator.setAppBadge !== 'function') return;
+    const update = count > 0 ? navigator.setAppBadge(count) : navigator.clearAppBadge();
+    update?.catch?.(() => {});
+  }, [ready, count]);
+
+  return null;
 }
 
 /** Keeps the book in sync with the account while the app is open (when logged in). */

@@ -60,6 +60,7 @@ export function parseBackup(text) {
       name,
       phone: isText(client.phone) ? client.phone : '',
       address: isText(client.address) ? client.address : '',
+      dueDate: isISODate(client.dueDate) ? client.dueDate : '',
       createdAt: isText(client.createdAt) ? client.createdAt : now,
       updatedAt: isText(client.updatedAt) ? client.updatedAt : now,
     };

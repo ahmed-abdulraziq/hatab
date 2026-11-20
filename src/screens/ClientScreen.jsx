@@ -1,12 +1,15 @@
-import { MapPin, MessageCircle, Pencil, Phone, Printer, ReceiptText, Trash2, UserX } from 'lucide-react';
+import { CalendarClock, ChevronLeft, FileImage, MapPin, MessageCircle, Pencil, Phone, Printer, ReceiptText, Trash2, UserX } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import ClientFormDialog from '../components/ClientFormDialog.jsx';
+import DueDateDialog from '../components/DueDateDialog.jsx';
 import { useConfirm } from '../components/confirm.js';
+import StatementDialog from '../components/StatementDialog.jsx';
 import TransactionFormDialog from '../components/TransactionFormDialog.jsx';
 import { useToast } from '../components/toast.js';
 import { AppBar, EmptyState } from '../components/ui.jsx';
 import { deleteClient } from '../db/repo.js';
 import { formatDate, formatDayLabel, todayISO } from '../domain/dates.js';
+import { dueStatus } from '../domain/due.js';
 import {
   balanceOf,
   balanceText,
@@ -31,6 +34,8 @@ export default function ClientScreen({ id }) {
   const [editingClient, setEditingClient] = useState(false);
   const [newEntryType, setNewEntryType] = useState(null);
   const [editingEntry, setEditingEntry] = useState(null);
+  const [showingStatement, setShowingStatement] = useState(false);
+  const [editingDue, setEditingDue] = useState(false);
 
   const client = clientsById.get(id);
   const entries = useMemo(
@@ -58,8 +63,9 @@ export default function ClientScreen({ id }) {
   const today = todayISO();
   const reminderUrl = whatsappUrl(
     client.phone,
-    reminderMessage({ clientName: client.name, balance, shopName: settings.shopName ?? '', today }),
+    reminderMessage({ clientName: client.name, balance, shopName: settings.shopName ?? '', today, dueDate: client.dueDate }),
   );
+  const due = dueStatus(client.dueDate, balance, today);
 
   const remove = async () => {
     const ok = await confirm({
@@ -118,6 +124,33 @@ export default function ClientScreen({ id }) {
           {entries.length > 0 && <span className="balance-card-meta">{countAr(entries.length, TX_WORDS)}</span>}
         </section>
 
+        {due ? (
+          <button
+            type="button"
+            className={`due due--${due.kind}`}
+            onClick={() => setEditingDue(true)}
+            aria-label={`ميعاد السداد ${due.dateText}. ${due.text}. دوس عشان تغيّره`}
+          >
+            <CalendarClock aria-hidden="true" size={22} className="due-icon" />
+            <span className="due-text">
+              <strong>ميعاد السداد: {due.dateText}</strong>
+              <span>{due.text}</span>
+            </span>
+            <ChevronLeft aria-hidden="true" size={18} className="due-chevron no-print" />
+          </button>
+        ) : (
+          balance > 0 && (
+            <button type="button" className="due due--empty no-print" onClick={() => setEditingDue(true)}>
+              <CalendarClock aria-hidden="true" size={22} className="due-icon" />
+              <span className="due-text">
+                <strong>حدد ميعاد سداد</strong>
+                <span>ولما ييجي، البرنامج يفكّرك أول ما تفتحه</span>
+              </span>
+              <ChevronLeft aria-hidden="true" size={18} className="due-chevron" />
+            </button>
+          )
+        )}
+
         <div className="quick-actions no-print">
           <a className="chip chip--whatsapp" href={reminderUrl} target="_blank" rel="noopener noreferrer">
             <MessageCircle aria-hidden="true" size={18} />
@@ -129,9 +162,13 @@ export default function ClientScreen({ id }) {
               اتصال
             </a>
           )}
+          <button type="button" className="chip" onClick={() => setShowingStatement(true)}>
+            <FileImage aria-hidden="true" size={18} />
+            كشف حساب
+          </button>
           <button type="button" className="chip" onClick={() => window.print()}>
             <Printer aria-hidden="true" size={18} />
-            كشف حساب
+            طباعة
           </button>
         </div>
 
@@ -195,6 +232,17 @@ export default function ClientScreen({ id }) {
       {editingClient && <ClientFormDialog client={client} onClose={() => setEditingClient(false)} />}
       {newEntryType && (
         <TransactionFormDialog clientId={id} type={newEntryType} lockClient onClose={() => setNewEntryType(null)} />
+      )}
+      {editingDue && <DueDateDialog client={client} today={today} onClose={() => setEditingDue(false)} />}
+      {showingStatement && (
+        <StatementDialog
+          client={client}
+          transactions={transactions}
+          balance={balance}
+          shopName={settings.shopName ?? ''}
+          today={today}
+          onClose={() => setShowingStatement(false)}
+        />
       )}
       {editingEntry && (
         <TransactionFormDialog transaction={editingEntry} lockClient onClose={() => setEditingEntry(null)} />

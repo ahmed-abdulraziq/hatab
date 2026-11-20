@@ -1206,3 +1206,148 @@ textarea {
 .muted {
   color: var(--muted);
 }
+
+/* Statement image preview */
+.statement-preview {
+  display: grid;
+  place-items: center;
+  min-height: 220px;
+  max-height: 55vh;
+  margin-bottom: 14px;
+  overflow: auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.statement-preview img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.statement-hint {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.spin {
+  color: var(--muted);
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}
+
+/* Due date ("ميعاد السداد") */
+.due {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 12px 14px;
+  font: inherit;
+  color: var(--text);
+  text-align: start;
+  cursor: pointer;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.due-icon {
+  flex: none;
+  color: var(--brand);
+}
+
+.due-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.due-text strong {
+  font-size: 15px;
+}
+
+.due-text span {
+  color: var(--muted);
+}
+
+.due-chevron {
+  flex: none;
+  color: var(--muted);
+}
+
+.due--empty {
+  border-style: dashed;
+}
+
+.due--soon,
+.due--today {
+  background: var(--warn-soft);
+  border-color: var(--warn-border);
+}
+
+.due--soon .due-icon,
+.due--today .due-icon,
+.due--today .due-text span {
+  color: var(--warn);
+}
+
+.due--overdue {
+  background: var(--gave-soft);
+  border-color: var(--gave);
+}
+
+.due--overdue .due-icon,
+.due--overdue .due-text span {
+  color: var(--gave);
+}
+
+.due-badge {
+  align-self: flex-start;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 999px;
+}
+
+.due-badge--overdue {
+  color: var(--gave);
+  background: var(--gave-soft);
+}
+
+.due-badge--today,
+.due-badge--soon {
+  color: var(--warn);
+  background: var(--warn-soft);
+}
+
+.due-badge--later {
+  color: var(--muted);
+  background: var(--bg);
+}
+
+.notice--due {
+  background: var(--gave-soft);
+  border-color: #f3b4b4;
+}
+
+.notice--due .notice-icon {
+  color: var(--gave);
+}

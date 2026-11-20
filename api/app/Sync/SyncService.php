@@ -82,6 +82,10 @@ class SyncService
             $client->name = $item['name'];
             $client->phone = $item['phone'] ?? '';
             $client->address = $item['address'] ?? '';
+            // Older versions of the app don't send a due date; keep the one the server has.
+            if (array_key_exists('dueDate', $item)) {
+                $client->due_date = $item['dueDate'];
+            }
             $client->created_at = SyncTime::parse($item['createdAt']);
             $client->updated_at = $updatedAt;
             $client->deleted_at = isset($item['deletedAt']) ? SyncTime::parse($item['deletedAt']) : null;

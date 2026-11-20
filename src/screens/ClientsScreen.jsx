@@ -1,4 +1,4 @@
-import { ChevronLeft, CloudUpload, Search, Smartphone, Users, X } from 'lucide-react';
+import { CalendarClock, ChevronLeft, CloudUpload, Search, Smartphone, Users, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { downloadBackup, needsBackupReminder, shareBackup, snoozeBackupReminder } from '../backupActions.js';
 import ClientFormDialog from '../components/ClientFormDialog.jsx';
@@ -6,7 +6,8 @@ import { useToast } from '../components/toast.js';
 import { AppBar, BalanceTag, EmptyState, Fab } from '../components/ui.jsx';
 import { setSetting } from '../db/repo.js';
 import { daysAgoText, daysSince, formatDayLabel, todayISO } from '../domain/dates.js';
-import { CLIENT_SORTS, clientMatches, sortClients } from '../domain/ledger.js';
+import { clientsDueNow, dueStatus } from '../domain/due.js';
+import { balanceOf, CLIENT_SORTS, clientMatches, sortClients } from '../domain/ledger.js';
 import { formatMoney } from '../domain/money.js';
 import { CLIENT_WORDS, countAr } from '../domain/text.js';
 import { canShareFiles } from '../files.js';
@@ -20,12 +21,16 @@ export default function ClientsScreen() {
   const [query, setQuery] = useState('');
   const [sortBy, setSortBy] = useState('recent');
   const [adding, setAdding] = useState(false);
-
-  const rows = useMemo(
-    () => sortClients(clients.filter((client) => clientMatches(client, query)), balances, sortBy),
-    [clients, balances, query, sortBy],
-  );
+  const [onlyDue, setOnlyDue] = useState(false);
   const today = todayISO();
+
+  const dueNow = useMemo(() => clientsDueNow(clients, balances, today), [clients, balances, today]);
+  const showingDue = onlyDue && dueNow.length > 0;
+  const rows = useMemo(() => {
+    const dueIds = new Set(dueNow.map((client) => client.id));
+    const matching = clients.filter((client) => clientMatches(client, query) && (!showingDue || dueIds.has(client.id)));
+    return sortClients(matching, balances, sortBy);
+  }, [clients, balances, query, sortBy, dueNow, showingDue]);
 
   return (
     <>
@@ -41,6 +46,10 @@ export default function ClientsScreen() {
             <strong className="summary-value">{formatMoney(summary.payable)}</strong>
           </div>
         </section>
+
+        {dueNow.length > 0 && (
+          <DueNotice dueNow={dueNow} today={today} showing={showingDue} onToggle={() => setOnlyDue(!showingDue)} />
+        )}
 
         <Reminders ledger={ledger} />
 
@@ -83,7 +92,11 @@ export default function ClientsScreen() {
               </select>
             </div>
 
-            <p className="list-meta">{countAr(clients.length, CLIENT_WORDS)}</p>
+            <p className="list-meta">
+              {showingDue
+                ? `${countAr(dueNow.length, CLIENT_WORDS)} ميعاد سدادهم جه`
+                : countAr(clients.length, CLIENT_WORDS)}
+            </p>
 
             {rows.length === 0 ? (
               <p className="no-results">مفيش عميل بالاسم ده.</p>
@@ -91,6 +104,7 @@ export default function ClientsScreen() {
               <ul className="list" aria-label="العملاء">
                 {rows.map((client) => {
                   const info = balances.get(client.id);
+                  const due = dueStatus(client.dueDate, balanceOf(balances, client.id), today);
                   return (
                     <li key={client.id}>
                       <a
@@ -109,6 +123,7 @@ export default function ClientsScreen() {
                           <span className="row-sub">
                             {info ? `آخر حركة: ${formatDayLabel(info.lastDate, today)}` : 'مفيش حركات لسه'}
                           </span>
+                          {due && <span className={`due-badge due-badge--${due.kind}`}>{due.short}</span>}
                         </span>
                         <BalanceTag balance={info?.balance ?? 0} />
                         <ChevronLeft aria-hidden="true" size={18} className="row-chevron" />
@@ -127,6 +142,44 @@ export default function ClientsScreen() {
         <ClientFormDialog onClose={() => setAdding(false)} onSaved={(client) => navigate(clientPath(client.id))} />
       )}
     </>
+  );
+}
+
+/** Clients whose due date came: open the one, or list them all. */
+function DueNotice({ dueNow, today, showing, onToggle }) {
+  const [first] = dueNow;
+  const names = dueNow.slice(0, 3).map((client) => client.name);
+  const more = dueNow.length - names.length;
+
+  let title;
+  if (dueNow.length === 1) {
+    title = first.dueDate === today ? `ميعاد سداد ${first.name} النهارده` : `ميعاد سداد ${first.name} فات`;
+  } else {
+    title = `${countAr(dueNow.length, CLIENT_WORDS)} ميعاد سدادهم جه`;
+  }
+
+  return (
+    <section className="notice notice--due" aria-label="مواعيد السداد">
+      <CalendarClock aria-hidden="true" size={22} className="notice-icon" />
+      <div className="notice-text">
+        <strong>{title}</strong>
+        <span>
+          {dueNow.length > 1 && `${names.join('، ')}${more > 0 ? ` و${countAr(more, CLIENT_WORDS)} كمان` : ''}. `}
+          كلمهم أو ابعتلهم تذكير على واتساب.
+        </span>
+      </div>
+      <div className="notice-actions">
+        {dueNow.length === 1 ? (
+          <button type="button" className="btn btn--primary btn--small" onClick={() => navigate(clientPath(first.id))}>
+            افتح حسابه
+          </button>
+        ) : (
+          <button type="button" className="btn btn--primary btn--small" aria-pressed={showing} onClick={onToggle}>
+            {showing ? 'اعرض كل العملاء' : 'اعرضهم'}
+          </button>
+        )}
+      </div>
+    </section>
   );
 }
 
