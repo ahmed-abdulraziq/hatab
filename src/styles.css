@@ -1206,3 +1206,46 @@ textarea {
 .muted {
   color: var(--muted);
 }
+
+/* Statement image preview */
+.statement-preview {
+  display: grid;
+  place-items: center;
+  min-height: 220px;
+  max-height: 55vh;
+  margin-bottom: 14px;
+  overflow: auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.statement-preview img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.statement-hint {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.spin {
+  color: var(--muted);
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}

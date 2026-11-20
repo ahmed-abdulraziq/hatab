@@ -1,7 +1,8 @@
-import { MapPin, MessageCircle, Pencil, Phone, Printer, ReceiptText, Trash2, UserX } from 'lucide-react';
+import { FileImage, MapPin, MessageCircle, Pencil, Phone, Printer, ReceiptText, Trash2, UserX } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import ClientFormDialog from '../components/ClientFormDialog.jsx';
 import { useConfirm } from '../components/confirm.js';
+import StatementDialog from '../components/StatementDialog.jsx';
 import TransactionFormDialog from '../components/TransactionFormDialog.jsx';
 import { useToast } from '../components/toast.js';
 import { AppBar, EmptyState } from '../components/ui.jsx';
@@ -31,6 +32,7 @@ export default function ClientScreen({ id }) {
   const [editingClient, setEditingClient] = useState(false);
   const [newEntryType, setNewEntryType] = useState(null);
   const [editingEntry, setEditingEntry] = useState(null);
+  const [showingStatement, setShowingStatement] = useState(false);
 
   const client = clientsById.get(id);
   const entries = useMemo(
@@ -129,9 +131,13 @@ export default function ClientScreen({ id }) {
               اتصال
             </a>
           )}
+          <button type="button" className="chip" onClick={() => setShowingStatement(true)}>
+            <FileImage aria-hidden="true" size={18} />
+            كشف حساب
+          </button>
           <button type="button" className="chip" onClick={() => window.print()}>
             <Printer aria-hidden="true" size={18} />
-            كشف حساب
+            طباعة
           </button>
         </div>
 
@@ -195,6 +201,16 @@ export default function ClientScreen({ id }) {
       {editingClient && <ClientFormDialog client={client} onClose={() => setEditingClient(false)} />}
       {newEntryType && (
         <TransactionFormDialog clientId={id} type={newEntryType} lockClient onClose={() => setNewEntryType(null)} />
+      )}
+      {showingStatement && (
+        <StatementDialog
+          client={client}
+          transactions={transactions}
+          balance={balance}
+          shopName={settings.shopName ?? ''}
+          today={today}
+          onClose={() => setShowingStatement(false)}
+        />
       )}
       {editingEntry && (
         <TransactionFormDialog transaction={editingEntry} lockClient onClose={() => setEditingEntry(null)} />
