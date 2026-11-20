@@ -42,7 +42,7 @@ export default function StatementDialog({ client, transactions, balance, shopNam
     };
   }, [state]);
 
-  const caption = reminderMessage({ clientName: client.name, balance, shopName, today });
+  const caption = reminderMessage({ clientName: client.name, balance, shopName, today, dueDate: client.dueDate });
 
   const share = async () => {
     try {

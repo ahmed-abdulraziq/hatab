@@ -11,6 +11,7 @@ import {
   exportData,
   migrateLegacyData,
   replaceAllData,
+  setDueDate,
   setSetting,
   updateClient,
   updateTransaction,
@@ -83,6 +84,64 @@ describe('clients and entries', () => {
   });
 });
 
+describe('due dates', () => {
+  const dueDateOf = async (id) => (await db.clients.get(id)).dueDate;
+
+  it('starts empty, can be set and cleared, and syncs like any edit', async () => {
+    const client = await addClient({ name: 'أحمد' });
+    expect(client.dueDate).toBe('');
+    await db.clients.update(client.id, { dirty: 0 });
+
+    await setDueDate(client.id, '2026-11-25');
+    expect(await db.clients.get(client.id)).toMatchObject({ dueDate: '2026-11-25', dirty: 1 });
+    await setDueDate(client.id, '');
+    expect(await dueDateOf(client.id)).toBe('');
+  });
+
+  it('survives editing the client details', async () => {
+    const client = await addClient({ name: 'أحمد' });
+    await setDueDate(client.id, '2026-11-25');
+    await updateClient(client.id, { name: 'أحمد علي' });
+    expect(await dueDateOf(client.id)).toBe('2026-11-25');
+  });
+
+  it('is cleared once the client pays everything off, and kept after a part payment', async () => {
+    const client = await addClient({ name: 'أحمد' });
+    await addTransaction({ clientId: client.id, type: GAVE, amount: 10000, date: '2026-11-05' });
+    await setDueDate(client.id, '2026-11-25');
+
+    await addTransaction({ clientId: client.id, type: GOT, amount: 4000, date: '2026-11-06' });
+    expect(await dueDateOf(client.id)).toBe('2026-11-25');
+
+    const rest = await addTransaction({ clientId: client.id, type: GOT, amount: 6000, date: '2026-11-07' });
+    const cleared = await db.clients.get(client.id);
+    expect(cleared).toMatchObject({ dueDate: '', dirty: 1 });
+
+    // Buying on credit again later doesn't bring back the old, now overdue, date.
+    await deleteTransaction(rest.id);
+    expect(await dueDateOf(client.id)).toBe('');
+  });
+
+  it('is cleared when editing or deleting entries settles the account', async () => {
+    const client = await addClient({ name: 'أحمد' });
+    const other = await addClient({ name: 'منى' });
+    const sugar = await addTransaction({ clientId: client.id, type: GAVE, amount: 5000, date: '2026-11-05' });
+    const rice = await addTransaction({ clientId: other.id, type: GAVE, amount: 3000, date: '2026-11-05' });
+    await setDueDate(client.id, '2026-11-25');
+    await setDueDate(other.id, '2026-11-26');
+
+    // Moving the entry to someone else settles the first client only.
+    await updateTransaction(sugar.id, { ...sugar, clientId: other.id });
+    expect(await dueDateOf(client.id)).toBe('');
+    expect(await dueDateOf(other.id)).toBe('2026-11-26');
+
+    await deleteTransaction(sugar.id);
+    expect(await dueDateOf(other.id)).toBe('2026-11-26');
+    await deleteTransaction(rice.id);
+    expect(await dueDateOf(other.id)).toBe('');
+  });
+});
+
 describe('backup data', () => {
   it('exports only what is in the book now', async () => {
     const client = await addClient({ name: 'أحمد' });
@@ -94,7 +153,7 @@ describe('backup data', () => {
     const backup = await exportData();
 
     expect(backup.clients).toEqual([
-      { id: client.id, name: 'أحمد', phone: '', address: '', createdAt: client.createdAt, updatedAt: client.updatedAt },
+      { id: client.id, name: 'أحمد', phone: '', address: '', dueDate: '', createdAt: client.createdAt, updatedAt: client.updatedAt },
     ]);
     expect(backup.transactions).toHaveLength(1);
     expect(backup.transactions[0]).not.toHaveProperty('dirty');

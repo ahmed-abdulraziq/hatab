@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db, isLive } from '../db/db.js';
-import { addClient, addTransaction, deleteClient, setSetting, updateClient } from '../db/repo.js';
+import { addClient, addTransaction, deleteClient, setDueDate, setSetting, updateClient } from '../db/repo.js';
 import { GAVE } from '../domain/ledger.js';
 import { createFakeServer, SERVER } from '../test/fakeServer.js';
 import { ApiError, NetworkError } from './api.js';
@@ -54,6 +54,22 @@ describe('syncing the book', () => {
     expect((await live(db.clients)).map((c) => c.name)).toEqual(['منى']);
     expect(await live(db.transactions)).toHaveLength(1);
     expect(await countPending()).toBe(0);
+  });
+
+  it('carries due dates to the other devices', async () => {
+    await account();
+    const ahmed = await addClient({ name: 'أحمد' });
+    const mona = await addClient({ name: 'منى' });
+    await setDueDate(ahmed.id, '2026-11-25');
+    await sync();
+    expect(server.clients.get(ahmed.id).record.dueDate).toBe('2026-11-25');
+    expect(server.clients.get(mona.id).record.dueDate).toBeNull();
+
+    await newDevice();
+    await account('login');
+    await sync();
+    expect((await db.clients.get(ahmed.id)).dueDate).toBe('2026-11-25');
+    expect((await db.clients.get(mona.id)).dueDate).toBe('');
   });
 
   it('sends deletions to the other devices, and receives theirs', async () => {

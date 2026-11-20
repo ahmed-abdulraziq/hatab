@@ -1,4 +1,5 @@
 import { formatDate, parseISODate } from './dates.js';
+import { dueStatus } from './due.js';
 import { GAVE, withRunningBalance } from './ledger.js';
 import { formatAmount, formatMoney } from './money.js';
 import { countAr, TX_WORDS } from './text.js';
@@ -51,6 +52,8 @@ export function buildStatement({ client, transactions, shopName = '', today, max
     else paid += tx.amount;
   }
 
+  const due = dueStatus(client.dueDate, balance, today);
+
   return {
     shopName: shopName.trim(),
     clientName: client.name,
@@ -61,6 +64,9 @@ export function buildStatement({ client, transactions, shopName = '', today, max
     balanceLabel: balance > 0 ? 'عليك' : balance < 0 ? 'ليك' : 'الحساب',
     balanceAmount: balance === 0 ? 'خالص' : formatMoney(balance),
     countText: all.length > 0 ? countAr(all.length, TX_WORDS) : 'لسه مفيش حركات',
+    // Said to the client, so "كان" once the day has passed.
+    dueText: due ? `${due.kind === 'overdue' ? 'ميعاد السداد كان' : 'ميعاد السداد'} ${due.dateText}` : '',
+    dueOverdue: due?.kind === 'overdue',
     opening:
       hiddenCount > 0
         ? {

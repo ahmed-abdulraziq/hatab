@@ -71,6 +71,16 @@ describe('statement', () => {
     expect(clientBalanceText(0)).toBe('خالص');
   });
 
+  it('tells the client when payment is due, while they owe', () => {
+    const owing = [tx(GAVE, 5000, '2026-11-01')];
+    const at = (dueDate, transactions = owing) =>
+      buildStatement({ client: { ...client, dueDate }, transactions, today: '2026-11-20' });
+    expect(at('2026-11-25')).toMatchObject({ dueText: 'ميعاد السداد 25 نوفمبر 2026', dueOverdue: false });
+    expect(at('2026-11-10')).toMatchObject({ dueText: 'ميعاد السداد كان 10 نوفمبر 2026', dueOverdue: true });
+    expect(at('').dueText).toBe('');
+    expect(at('2026-11-25', []).dueText).toBe('');
+  });
+
   it('shows the year only for other years', () => {
     expect(shortDate('2026-03-05', '2026-11-20')).toBe('5 مارس');
     expect(shortDate('2025-03-05', '2026-11-20')).toBe('5 مارس 2025');

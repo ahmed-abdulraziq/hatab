@@ -20,6 +20,7 @@ class SyncController extends Controller
             'clients.*.name' => ['required', 'string', 'max:80'],
             'clients.*.phone' => ['nullable', 'string', 'max:40'],
             'clients.*.address' => ['nullable', 'string', 'max:200'],
+            'clients.*.dueDate' => ['nullable', 'date_format:Y-m-d'],
             'clients.*.createdAt' => ['required', SyncTime::RULE],
             'clients.*.updatedAt' => ['required', SyncTime::RULE],
             'clients.*.deletedAt' => ['nullable', SyncTime::RULE],

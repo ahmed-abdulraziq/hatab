@@ -25,6 +25,7 @@ class Client extends Model
     {
         return [
             'user_id' => 'integer',
+            'due_date' => 'date:Y-m-d',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',
@@ -40,6 +41,7 @@ class Client extends Model
             'name' => $this->name,
             'phone' => $this->phone,
             'address' => $this->address,
+            'dueDate' => $this->due_date?->format('Y-m-d'),
             'createdAt' => SyncTime::format($this->created_at),
             'updatedAt' => SyncTime::format($this->updated_at),
             'deletedAt' => SyncTime::format($this->deleted_at),

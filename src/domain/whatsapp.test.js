@@ -24,6 +24,21 @@ describe('reminderMessage', () => {
   });
 });
 
+describe('reminderMessage with a due date', () => {
+  const lines = (dueDate, balance = 5000) => reminderMessage({ clientName: 'أحمد', balance, today, dueDate }).split('\n');
+
+  it('says when payment is due, or was', () => {
+    expect(lines('2026-11-10')[2]).toBe('ميعاد السداد يوم 10 نوفمبر 2026.');
+    expect(lines(today)[2]).toBe('ميعاد السداد النهارده.');
+    expect(lines('2026-11-01')[2]).toBe('ميعاد السداد كان يوم 1 نوفمبر 2026.');
+  });
+
+  it('leaves it out when nothing is owed', () => {
+    expect(lines('2026-11-10', 0)).toHaveLength(3);
+    expect(lines('2026-11-10', -100).join('\n')).not.toContain('ميعاد');
+  });
+});
+
 describe('whatsappUrl', () => {
   it('opens a chat with the number and the message', () => {
     const url = new URL(whatsappUrl('010 1234 5678', 'السلام عليكم\nسطر تاني'));

@@ -1,4 +1,5 @@
 import { db } from '../db/db.js';
+import { isISODate } from '../domain/dates.js';
 import { setSetting, setSettings } from '../db/repo.js';
 import { ApiError, apiRequest, normalizeServerUrl } from './api.js';
 
@@ -25,10 +26,14 @@ const clientToWire = (c) => ({
   name: String(c.name).slice(0, 80),
   phone: String(c.phone ?? '').slice(0, 40),
   address: String(c.address ?? '').slice(0, 200),
+  dueDate: isISODate(c.dueDate) ? c.dueDate : null,
   createdAt: c.createdAt,
   updatedAt: c.updatedAt,
   deletedAt: c.deletedAt ?? null,
 });
+
+// The server sends null for "no due date"; on the device it's an empty string.
+const clientFromWire = (c) => ({ ...c, dueDate: c.dueDate ?? '' });
 
 const transactionToWire = (t) => ({
   id: t.id,
@@ -64,7 +69,7 @@ async function applyResult(result, sentClients, sentTransactions) {
   await db.transaction('rw', db.clients, db.transactions, db.settings, async () => {
     await settle(db.clients, sentClients, keepDirty);
     await settle(db.transactions, sentTransactions, keepDirty);
-    await merge(db.clients, result.clients);
+    await merge(db.clients, result.clients.map(clientFromWire));
     await merge(db.transactions, result.transactions);
     await db.settings.put({ key: 'syncRevision', value: result.revision });
   });

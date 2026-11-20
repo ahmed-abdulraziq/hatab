@@ -127,6 +127,12 @@ function drawBalanceCard(ctx, model, top) {
   ctx.fillStyle = COLORS.muted;
   ctx.font = font(26, 500);
   ctx.fillText(model.countText, PAD + 36, top + 134);
+
+  if (model.dueText) {
+    ctx.fillStyle = model.dueOverdue ? COLORS.owes : COLORS.text;
+    ctx.font = font(26, 700);
+    ctx.fillText(fit(ctx, model.dueText, 420), PAD + 36, top + 62);
+  }
 }
 
 function drawTable(ctx, model, top) {

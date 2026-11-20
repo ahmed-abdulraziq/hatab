@@ -22,6 +22,7 @@ class SyncTest extends TestCase
             'name' => 'أحمد',
             'phone' => '01012345678',
             'address' => '',
+            'dueDate' => null,
             'createdAt' => '2026-11-05T10:00:00.000Z',
             'updatedAt' => '2026-11-05T10:00:00.000Z',
             'deletedAt' => null,
@@ -82,6 +83,32 @@ class SyncTest extends TestCase
             ->assertJsonPath('revision', 3)
             ->assertJsonPath('clients', [])
             ->assertJsonPath('transactions', []);
+    }
+
+    public function test_due_dates_sync_and_older_apps_leave_them_alone(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+        $ahmed = $this->client(['dueDate' => '2026-11-25']);
+
+        $this->sync(0, [$ahmed])->assertOk()->assertJsonPath('rejected', []);
+        $this->sync(0)->assertJsonPath('clients.0.dueDate', '2026-11-25');
+
+        // An app from before due dates sends the client without the field: the date stays.
+        $older = $this->client(['id' => $ahmed['id'], 'name' => 'أحمد علي', 'updatedAt' => '2026-11-06T10:00:00.000Z']);
+        unset($older['dueDate']);
+        $this->sync(1, [$older])->assertOk();
+        $this->sync(0)
+            ->assertJsonPath('clients.0.name', 'أحمد علي')
+            ->assertJsonPath('clients.0.dueDate', '2026-11-25');
+
+        // Clearing it is an edit like any other.
+        $cleared = [...$ahmed, 'dueDate' => null, 'updatedAt' => '2026-11-07T10:00:00.000Z'];
+        $this->sync(2, [$cleared])->assertOk();
+        $this->sync(0)->assertJsonPath('clients.0.dueDate', null);
+
+        $this->sync(3, [$this->client(['dueDate' => '25/11/2026'])])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('clients.0.dueDate');
     }
 
     public function test_the_newest_edit_wins(): void

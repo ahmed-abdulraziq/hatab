@@ -3,7 +3,7 @@ import { BackupError, createBackup, exportFileName, parseBackup, transactionsToC
 import { GAVE, GOT } from './ledger.js';
 
 const clients = [
-  { id: 'a', name: 'أحمد', phone: '01012345678', address: '', createdAt: '2026-11-01T08:00:00.000Z', updatedAt: '2026-11-01T08:00:00.000Z' },
+  { id: 'a', name: 'أحمد', phone: '01012345678', address: '', dueDate: '2026-11-25', createdAt: '2026-11-01T08:00:00.000Z', updatedAt: '2026-11-01T08:00:00.000Z' },
 ];
 const transactions = [
   { id: 't1', clientId: 'a', type: GAVE, amount: 15050, date: '2026-11-01', note: 'سكر, "فاخر"', createdAt: '2026-11-01T09:00:00.000Z', updatedAt: '2026-11-01T09:00:00.000Z' },
@@ -16,6 +16,14 @@ describe('backups', () => {
     const backup = createBackup({ clients, transactions, settings: { shopName: 'محل الأمل', lastBackupAt: 'x' } });
     expect(backup).toMatchObject({ app: 'hatab', version: 1, settings: { shopName: 'محل الأمل' } });
     expect(parseBackup(json(backup))).toEqual({ clients, transactions, settings: { shopName: 'محل الأمل' } });
+  });
+
+  it('drop a due date they cannot read, and accept backups from before due dates', () => {
+    const backup = createBackup({ clients: [{ ...clients[0], dueDate: '25/11' }], transactions: [] });
+    expect(parseBackup(json(backup)).clients[0].dueDate).toBe('');
+    const older = { ...clients[0] };
+    delete older.dueDate;
+    expect(parseBackup(json(createBackup({ clients: [older], transactions: [] }))).clients[0].dueDate).toBe('');
   });
 
   it('are named by date', () => {
